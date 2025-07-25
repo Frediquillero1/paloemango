@@ -1,12 +1,13 @@
 'use client';
 
+import z from 'zod';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Space_Grotesk } from 'next/font/google';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { cn } from '@/lib/utils';
 import { useTRPC } from '@/trpc/client';
@@ -22,24 +23,26 @@ import {
 } from '@/components/ui/form';
 
 import { loginSchema } from '../../schemas';
+import { trpc } from '@/trpc/server';
 
 const font = Space_Grotesk({
   subsets: ['latin'],
   weight: ['700'],
 });
-
 export const SignInView = () => {
   const router = useRouter();
 
-  const trpc =useTRPC();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const login = useMutation(trpc.auth.login.mutationOptions({
     onError: (error) => {
       toast.error(error.message);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
       router.push('/');
     },
-  }));
+ }));
 
   const form = useForm<z.infer<typeof loginSchema>>({
     mode: 'all',
@@ -51,8 +54,8 @@ export const SignInView = () => {
   });
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
-    login.mutate(values)
-  }
+    login.mutate(values);
+  };
 
   return (
     <div className='grid grid-cols-1 lg:grid-cols-5'>
@@ -107,9 +110,7 @@ export const SignInView = () => {
                 <FormItem>
                   <FormLabel className='text-base'>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                    />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
