@@ -23,7 +23,7 @@ interface NavbarItemProps {
   isActive?: boolean;
 }
 
-const NavbarItem = ({ href, children, isActive }: NavbarItemProps) => {
+const NavbarItem = ({ href, children, isActive = false }: NavbarItemProps) => {
   return (
     <Button
       asChild
@@ -75,7 +75,8 @@ export const Navbar = () => {
         onOpenChange={setIsSidebarOpen}
       />
 
-      <div className='items-center gap-4 hidden lg:flex'>
+      {/* Navigation Links (Desktop) */}
+      <div className='hidden lg:flex items-center gap-4'>
         {navbarItems.map((item) => (
           <NavbarItem
             key={item.href}
@@ -87,26 +88,58 @@ export const Navbar = () => {
         ))}
       </div>
 
+      {/* Auth-related buttons (visible on desktop only) */}
       {session.data?.user ? (
+        // If user is authenticated, show Dashboard access
         <div className='hidden lg:flex'>
           <Button
             asChild
             className='border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg'
           >
-            <Link href='/admin'>Dashboard</Link>
+            <Link href={'/admin'}>Dashboard</Link>
           </Button>
         </div>
       ) : (
-        <div className='flex lg:hidden items-center justify-center'>
+        // If user is not authenticated, show Login and Register options
+        <div className='hidden lg:flex'>
+          {/* Login button - navigates to sign-in page */}
           <Button
-            variant='ghost'
-            className='size-12 border-transparent bg-white'
-            onClick={() => setIsSidebarOpen(true)}
+            asChild
+            variant={'secondary'}
+            className='border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-lg'
           >
-            <MenuIcon />
+            <Link
+              prefetch
+              href={'/sign-in'}
+            >
+              Log in
+            </Link>
+          </Button>
+
+          {/* Register button - navigates to sign-up page */}
+          <Button
+            asChild
+            className='border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg'
+          >
+            <Link
+              prefetch
+              href={'/sign-up'}
+            >
+              Start selling
+            </Link>
           </Button>
         </div>
       )}
+
+      <div className='flex lg:hidden items-center justify-center'>
+        <Button
+          variant={'ghost'}
+          className='size-12 border-transparent bg-white'
+          onClick={() => setIsSidebarOpen(true)}
+        >
+          <MenuIcon />
+        </Button>
+      </div>
     </nav>
   );
 };
