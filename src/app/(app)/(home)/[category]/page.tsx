@@ -1,42 +1,39 @@
-import { Suspense } from 'react';
-import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
-
+import { DEFAULT_LIMIT } from '@/constants';
+import { loadProductFilters } from '@/modules/products/search-params';
+import { ProductListView } from '@/modules/products/ui/views/product-list-view';
 import { getQueryClient, trpc } from '@/trpc/server';
+import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import type { SearchParams } from 'nuqs/server';
 
-import {
-  ProductList,
-  ProductListSkeleton,
-} from '@/modules/products/ui/components/product-list';
-import { ProductFilters } from '@/modules/products/ui/components/product-filters';
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 
-interface Props {
-  params: Promise<{}>;
+// PageProps - Defines the route and query parameters passed to the category page
+interface PageProps {
+  params: Promise<{ category: string }>; // Dynamic segment from the route (category slug)
+  searchParams: Promise<SearchParams>; // URL query params (minPrice, maxPrice, etc.)
 }
 
-const Page = async ({ params }: Props) => {
-  const { category } = await params;
+// Page - Displays product list for a selected category
+const Page = async ({ params, searchParams }: PageProps) => {
+  const { category } = await params; // Extract category from dynamic route parameters
+  const filters = await loadProductFilters(searchParams); // Parse filters from search params
 
-  const queryClient = getQueryClient();
-  void queryClient.fetchQuery(
-    trpc.products.getMany.queryOptions({
-      category,
+  const queryClient = getQueryClient(); // Initialize a new query client
+
+  // Prefetch products using infinite query based on category and filters
+  void queryClient.prefetchInfiniteQuery(
+    trpc.products.getMany.infiniteQueryOptions({
+      category, // Category slug used to filter products
+      ...filters, // Spread query filters (price range, etc.)
+      limit: DEFAULT_LIMIT, // Define how many items to fetch per page
     })
   );
 
   return (
+    // Wraps server-side data for hydration on client
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <div className='px-4 lg:px-12 py-8 flex flex-col gap-4'>
-        <div className='grid grid-cols-1 lg:grid-cols-6 xl:grid-cols-8 gap-y-6 gap-x-12'>
-          <div className='lg:col-span-2 xl:col-span-2'>
-            <ProductFilters />
-          </div>
-          <div className="lg:col-span-4 xl:col-span-6">
-          <Suspense fallback={<ProductListSkeleton />}>
-            <ProductList category={category} />
-          </Suspense>
-          </div>
-        </div>
-      </div>
+      <ProductListView category={category} />
     </HydrationBoundary>
   );
 };
