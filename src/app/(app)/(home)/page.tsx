@@ -1,18 +1,33 @@
-'use client'
+import { DEFAULT_LIMIT } from '@/constants';
+import { loadProductFilters } from '@/modules/products/search-params';
+import { ProductListView } from '@/modules/products/ui/views/product-list-view';
+import { getQueryClient, trpc } from '@/trpc/server';
+import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
+import { SearchParams } from 'nuqs/server';
 
-import { useQuery } from '@tanstack/react-query';
+// HomeProps - Defines the route and query parameters passed to the home page
+interface HomeProps {
+  searchParams: Promise<SearchParams>; // URL query parameters (minPrice, maxPrice, etc.)
+}
 
-import { useTRPC } from '@/trpc/client';
+// Home - Server component for rendering the product listing page with query-based filtering
+export default async function Home({ searchParams }: HomeProps) {
+  const filters = await loadProductFilters(searchParams); // Parse filters from search params
 
+  const queryClient = getQueryClient(); // Initialize a new query client
 
-
-export default function Home() {
-  const trpc = useTRPC();
-  const { data } = useQuery(trpc.auth.session.queryOptions());
+  // Prefetch products using infinite query based on category and filters
+  void queryClient.prefetchInfiniteQuery(
+    trpc.products.getMany.infiniteQueryOptions({
+      ...filters, // Spread query filters (price range, etc.)
+      limit: DEFAULT_LIMIT, // Define how many items to fetch per page
+    })
+  );
 
   return (
-    <div>
-     {JSON.stringify(data?.user, null, 2)}
-    </div>
+    // Wraps server-side data for hydration on client
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ProductListView />
+    </HydrationBoundary>
   );
 }
