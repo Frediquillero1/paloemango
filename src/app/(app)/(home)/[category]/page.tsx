@@ -9,13 +9,13 @@ import type { SearchParams } from 'nuqs/server';
 export const dynamic = 'force-dynamic';
 
 // PageProps - Defines the route and query parameters passed to the category page
-interface PageProps {
+interface Props {
   params: Promise<{ category: string }>; // Dynamic segment from the route (category slug)
   searchParams: Promise<SearchParams>; // URL query params (minPrice, maxPrice, etc.)
 }
 
 // Page - Displays product list for a selected category
-const Page = async ({ params, searchParams }: PageProps) => {
+const Page = async ({ params, searchParams }: Props) => {
   const { category } = await params; // Extract category from dynamic route parameters
   const filters = await loadProductFilters(searchParams); // Parse filters from search params
 
