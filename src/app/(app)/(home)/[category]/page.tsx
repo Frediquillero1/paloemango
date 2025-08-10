@@ -20,15 +20,12 @@ const Page = async ({ params, searchParams }: Props) => {
   const filters = await loadProductFilters(searchParams); // Parse filters from search params
 
   const queryClient = getQueryClient(); // Initialize a new query client
-
   // Prefetch products using infinite query based on category and filters
-  void queryClient.prefetchInfiniteQuery(
-    trpc.products.getMany.infiniteQueryOptions({
-      category, // Category slug used to filter products
+  void queryClient.prefetchInfiniteQuery(trpc.products.getMany.infiniteQueryOptions({
       ...filters, // Spread query filters (price range, etc.)
+      category, // Category slug used to filter products
       limit: DEFAULT_LIMIT, // Define how many items to fetch per page
-    })
-  );
+    }));
 
   return (
     // Wraps server-side data for hydration on client

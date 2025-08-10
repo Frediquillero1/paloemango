@@ -28,8 +28,8 @@ const Page = async ({ params, searchParams }: Props) => {
   // Prefetch paginated product data using subcategory and filters
   void queryClient.prefetchInfiniteQuery(
     trpc.products.getMany.infiniteQueryOptions({
-      category: subcategory, // Treat subcategory as the category filter
       ...filters, // Spread filter parameters (minPrice, maxPrice, etc.)
+      category: subcategory, // Treat subcategory as the category filter
       limit: DEFAULT_LIMIT, // Use default pagination limit
     })
   );
