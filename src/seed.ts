@@ -1,6 +1,7 @@
-import { getPayload } from "payload";
 import config from "@payload-config";
+import { getPayload } from "payload";
 
+// Define an array of categories, each with optional subcategories and color
 const categories = [
   {
     name: "All",
@@ -135,40 +136,74 @@ const categories = [
       { name: "Macro", slug: "macro" },
     ],
   },
-]
+];
 
+// seed - Seeds the database with the predefined categories and their subcategories
 const seed = async () => {
-  const payload = await getPayload({ config });
+  const payload = await getPayload({ config }); // Initialize Payload with the given config
 
+  // Create admin tenant
+  // This is the root tenant used to isolate super-admin resources.
+  // All system-level or tenant-agnostic features should be scoped under this tenant.
+  const adminTenant = await payload.create({
+    collection: "tenants",
+    data: {
+      name: "admin", // Human-readable name of the tenant
+      slug: "admin", // Used for routing or subdomain mapping
+      stripeAccountId: "admin", // Placeholder Stripe account ID for the admin tenant
+    },
+  });
+
+  // Create admin user
+  // This user acts as the global super-admin for the platform.
+  // Has elevated privileges and is linked to the admin tenant for top-level access.
+  await payload.create({
+    collection: "users",
+    data: {
+      email: "admin@demo.com", // Admin's login email
+      password: "demo", // Admin's initial password (should be updated in production)
+      roles: ["super-admin"], // Assign the highest-level role for unrestricted access
+      username: "admin", // Username used for internal identification or display
+      tenants: [
+        {
+          tenant: adminTenant.id, // Link the admin user to the admin tenant
+        },
+      ],
+    },
+  });
+
+  // Loop through top-level categories
   for (const category of categories) {
-    const parentCategory =await payload.create({
+    // Create the parent category entry
+    const parentCategory = await payload.create({
       collection: "categories",
       data: {
         name: category.name,
         slug: category.slug,
         color: category.color,
-        parent: null,
+        parent: null, // Top-level category has no parent
       },
     });
 
+    // If there are subcategories, create them and link to parent
     for (const subcategory of category.subcategories || []) {
       await payload.create({
         collection: "categories",
         data: {
           name: subcategory.name,
           slug: subcategory.slug,
-          parent: parentCategory.id,
+          parent: parentCategory.id, // Link subcategory to parent
         },
       });
     }
   }
-}
+};
 
 try {
-await seed();
-console.log('Seeding completed successfully');
-process.exit(0);
+  await seed(); // Run the seed function to populate the database
+  console.log("Seeding completed successfully"); // Log success message
+  process.exit(0); // Exit process with success code
 } catch (error) {
-console.error('Seeding failed:', error);
-process.exit(1); // Exit with error code
+  console.log("Error during seeding", error); // Log the error that occurred during seeding
+  process.exit(1); // Exit process with failure code
 }
